@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OLL Trainer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#161616;--bg2:#1f1f1f;--bg3:#2a2a2a;--bg4:#333;
+  --border:#2e2e2e;--border2:#404040;
+  --text:#e0e0e0;--text2:#909090;--text3:#555;
+  --yellow:#f5c518;--dark:#282828;--darkstroke:#00000040;
+  --accent:#4d8fd1;
+  --green:#3d9e6a;--green-bg:#162418;--green-text:#5ec98a;
+  --amber:#c48c2a;--amber-bg:#271e0e;--amber-text:#d4a84a;
+  --radius:10px;--radius-lg:16px;--radius-xl:21px;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:2.625rem 1.3125rem 5.25rem;}
+#app{width:100%;max-width:656px;}
+.view{display:none;}
+.view.active{display:block;}
+
+.top-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.95rem;}
+.nav-label{font-size:17px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
+.icon-btn{display:flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--border2);border-radius:var(--radius);padding:9px 16px;cursor:pointer;color:var(--text2);font-size:20px;font-weight:500;transition:all .15s;}
+.icon-btn:hover{background:var(--bg3);color:var(--text);}
+.icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.95rem;margin-bottom:1.3125rem;}
+
+.oll-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:1.65rem;}
+.status-badge{font-size:17px;font-weight:600;padding:7px 17px;border-radius:35px;letter-spacing:.03em;cursor:default;}
+.badge-learned{background:var(--green-bg);color:var(--green-text);}
+.badge-learning{background:var(--amber-bg);color:var(--amber-text);}
+.badge-unseen{background:var(--bg3);color:var(--text3);}
+
+.face-wrap{display:flex;justify-content:center;margin-bottom:1.65rem;}
+
+.alg-block{border-top:1px solid var(--border);padding-top:1.425rem;display:none;}
+.alg-block.vis{display:block;}
+.alg-label{font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px;}
+.alg-text{font-size:22px;font-weight:500;font-family:"SF Mono",Monaco,Menlo,Consolas,monospace;color:var(--text);line-height:1.7;}
+
+.btn-row{display:flex;gap:7px;margin-top:0.975rem;}
+.btn{flex:1;padding:12px 16px;border:1px solid var(--border2);background:transparent;border-radius:var(--radius);font-size:20px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn:hover{background:var(--bg3);color:var(--text);}
+.btn:active{transform:scale(.98);}
+.btn.primary{background:var(--text);color:var(--bg);border-color:transparent;font-weight:600;}
+.btn.primary:hover{opacity:.88;}
+.text-btn{background:none;border:none;cursor:pointer;font-size:19px;color:var(--text3);text-decoration:underline;text-underline-offset:3px;padding:4px 7px;transition:color .12s;}
+.text-btn:hover{color:var(--text2);}
+
+.mark-row{display:flex;justify-content:center;gap:21px;margin-top:13px;}
+
+/* Settings */
+.sec{margin-bottom:2.25rem;}
+.sec h3{font-size:15px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:13px;}
+
+.pat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+.pat-cell{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 5px 7px;cursor:pointer;text-align:center;transition:border-color .15s;}
+.pat-cell:hover{border-color:var(--border2);}
+.pat-cell.learned{border-color:#3d9e6a55;}
+.pat-cell.learning{border-color:#c48c2a55;}
+.pat-cell.excluded{opacity:.22;}
+.pat-cell svg{display:block;margin:0 auto 4px;}
+.pdot{width:7px;height:7px;border-radius:50%;margin:0 auto;}
+
+.legend{display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap;}
+.leg-i{display:flex;align-items:center;gap:8px;font-size:17px;color:var(--text3);}
+.leg-d{width:7px;height:7px;border-radius:50%;}
+
+.gc{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap;}
+.gc .btn{flex:none;padding:7px 13px;font-size:19px;}
+
+.export-row{display:flex;gap:10px;margin-top:.675rem;}
+
+/* Overlay */
+.overlay{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:200;}
+.overlay.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-xl);padding:1.95rem;width:92%;max-width:472px;}
+.modal h4{font-size:22px;font-weight:600;color:var(--text);margin-bottom:1.65rem;display:flex;align-items:center;justify-content:space-between;}
+.modal h4 button{background:none;border:none;color:var(--text3);cursor:pointer;font-size:23px;line-height:1;}
+.modal h4 button:hover{color:var(--text);}
+.modal label{display:block;font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px;margin-top:18px;}
+.modal label:first-of-type{margin-top:0;}
+.seg{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.seg-b{flex:1;padding:7px 10px;font-size:19px;font-weight:500;border:none;background:transparent;cursor:pointer;color:var(--text3);transition:all .12s;}
+.seg-b.on{background:var(--bg3);color:var(--text);}
+.modal textarea{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:"SF Mono",Monaco,Menlo,Consolas,monospace;font-size:20px;padding:10px 13px;resize:vertical;min-height:73px;margin-top:0;}
+.modal textarea:focus{outline:none;border-color:var(--accent);}
+.face-preview{display:flex;justify-content:center;margin-bottom:1rem;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- Practice view -->
+<div id="vp" class="view active">
+  <div class="top-nav">
+    <div class="nav-label">OLL Trainer</div>
+    <button class="icon-btn" onclick="openSettings()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+  </div>
+  <div class="card">
+    <div class="oll-header">
+      <span style="justify-self:start;"><span class="status-badge badge-unseen" id="p-badge">Not started</span></span>
+      <span style="font-size:22px;font-weight:600;color:var(--text);letter-spacing:.02em;text-align:center;" id="p-name"></span>
+      <span style="font-size:17px;color:var(--text3);text-align:right;display:block;" id="p-prob"></span>
+    </div>
+    <div class="face-wrap"><svg id="cube-svg" width="264" height="264" viewBox="1 1 264 264" style="overflow:visible;display:block;margin:0 auto;"></svg></div>
+    <div class="alg-block" id="alg-block">
+      <div class="alg-label">Algorithm</div>
+      <div class="alg-text" id="p-alg"></div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="toggleAlg()" id="alg-btn2">Show algorithm</button>
+    <button class="btn primary" onclick="nextOLL()">Next &rarr;</button>
+  </div>
+  <div class="mark-row">
+    <button class="text-btn" onclick="markCurrent('learned')">&#10003; Learned</button>
+    <button class="text-btn" onclick="markCurrent('learning')">&#9654; Learning</button>
+    <button class="text-btn" onclick="markCurrent('unseen')">&#8635; Reset</button>
+  </div>
+</div>
+
+<!-- Settings view -->
+<div id="vs" class="view">
+  <div class="top-nav">
+    <button class="icon-btn" onclick="closeSettings()">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Back
+    </button>
+    <div class="nav-label">Settings</div>
+    <div style="width:68px;"></div>
+  </div>
+  <div class="card">
+
+    <div class="sec">
+      <h3>Patterns &nbsp;<span style="font-weight:400;color:var(--text3);">— click to edit · right-click to exclude</span></h3>
+      <div id="status-stats" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+      <div class="pat-grid" id="pat-grid"></div>
+    </div>
+    <div class="sec">
+      <h3>Data</h3>
+      <p style="font-size:19px;color:var(--text3);margin-bottom:13px;">Export your progress to a file so it's never lost. Import to restore.</p>
+      <div class="export-row">
+        <button class="btn" onclick="exportData()">&#8681; Export JSON</button>
+        <button class="btn" onclick="document.getElementById('file-import').click()">&#8679; Import JSON</button>
+        <input type="file" id="file-import" accept=".json" style="display:none;" onchange="importData(event)">
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- Edit modal -->
+<div class="overlay" id="modal-overlay">
+  <div class="modal">
+    <h4>Edit pattern <button onclick="closeModal()">&times;</button></h4>
+    <div class="face-preview"><svg id="modal-svg" width="162" height="162" viewBox="1 1 162 162" style="overflow:visible;display:block;margin:0 auto;"></svg></div>
+    <label>Status</label>
+    <div class="seg">
+      <button class="seg-b" id="ms-unseen" onclick="setMs('unseen')">Not started</button>
+      <button class="seg-b" id="ms-learning" onclick="setMs('learning')">Learning</button>
+      <button class="seg-b" id="ms-learned" onclick="setMs('learned')">Learned</button>
+    </div>
+    <label>Rotation</label>
+    <div class="seg">
+      <button class="seg-b" id="mr-0" onclick="setMr(0)">0&deg;</button>
+      <button class="seg-b" id="mr-90" onclick="setMr(90)">90&deg;</button>
+      <button class="seg-b" id="mr-180" onclick="setMr(180)">180&deg;</button>
+      <button class="seg-b" id="mr-270" onclick="setMr(270)">270&deg;</button>
+    </div>
+    <label>Algorithm</label>
+    <textarea id="m-alg" rows="2"></textarea>
+    <div class="btn-row" style="margin-top:10px;">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="saveModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>const OLL_DATA=[
+  {"id":1,"top":"XXXXYXXXX","B":"XYX","R":"YYY","F":"XYX","L":"YYY","group":"No Edges Flipped Correctly","name":"O1","prob":"1/108","alg":"(R U2') (R2' F R F') U2' (R' F R F')"},
+  {"id":2,"top":"XXXXYXXXX","B":"XYY","R":"XYX","F":"XYY","L":"YYY","group":"No Edges Flipped Correctly","name":"O2","prob":"1/54","alg":"F (R U R' U') F' f (R U R' U') f'"},
+  {"id":3,"top":"XXXXYXXXY","B":"YYX","R":"YYX","F":"XYX","L":"XYY","group":"No Edges Flipped Correctly","name":"O3","prob":"1/54","alg":"f (R U R' U') f' U' F (R U R' U') F'"},
+  {"id":4,"top":"XXYXYXXXX","B":"XYX","R":"XYY","F":"YYX","L":"YYX","group":"No Edges Flipped Correctly","name":"O4","prob":"1/54","alg":"f (R U R' U') f' U F (R U R' U') F'"},
+  {"id":5,"top":"XXXXYYXYY","B":"YYX","R":"YXX","F":"XXX","L":"XYY","group":"Squares","name":"S1","prob":"1/54","alg":"(r' U2' R U R' U r)"},
+  {"id":6,"top":"XYYXYYXXX","B":"XXX","R":"XXY","F":"YYX","L":"YYX","group":"Squares","name":"S2","prob":"1/54","alg":"(r U2 R' U' R U' r')"},
+  {"id":7,"top":"XYXYYXYXX","B":"YXX","R":"YYX","F":"XYY","L":"XXX","group":"Lightning Bolts","name":"B1","prob":"1/54","alg":"(r U R' U R U2' r')"},
+  {"id":8,"top":"YXXYYXXYX","B":"XYY","R":"XYY","F":"YXX","L":"XXX","group":"Lightning Bolts","name":"B2","prob":"1/54","alg":"(r' U' R U' R' U2 r)"},
+  {"id":9,"top":"XYXYYXXXY","B":"XXY","R":"XYX","F":"YYX","L":"YXX","group":"Fish Shapes","name":"F1","prob":"1/54","alg":"(R U R' U') R' F (R2 U R' U') F'"},
+  {"id":10,"top":"XXYYYXXYX","B":"YYX","R":"XYX","F":"XXY","L":"XXY","group":"Fish Shapes","name":"F2","prob":"1/54","alg":"(R U R' U) (R' F R F') (R U2' R')"},
+  {"id":11,"top":"XXXXYYYYX","B":"YYX","R":"YXX","F":"XXY","L":"XYX","group":"Lightning Bolts","name":"B3","prob":"1/54","alg":"r' (R2 U R' U R U2 R') U M'"},
+  {"id":12,"top":"YYXXYYXXX","B":"XXY","R":"XXY","F":"YYX","L":"XYX","group":"Lightning Bolts","name":"B4","prob":"1/54","alg":"M' (R' U' R U' R' U2 R) U' M"},
+  {"id":13,"top":"XXXYYYYXX","B":"YYX","R":"YXX","F":"XYY","L":"XXX","group":"Knight Move Shapes","name":"K1","prob":"1/54","alg":"(r U' r') (U' r U r') y' (R' U R)"},
+  {"id":14,"top":"XXXYYYXXY","B":"XYY","R":"XXX","F":"YYX","L":"YXX","group":"Knight Move Shapes","name":"K2","prob":"1/54","alg":"(R' F R) (U R' F' R) (F U' F')"},
+  {"id":15,"top":"XXXYYYXXY","B":"YYX","R":"YXX","F":"XYX","L":"XXY","group":"Knight Move Shapes","name":"K3","prob":"1/54","alg":"(r' U' r) (R' U' R U) (r' U r)"},
+  {"id":16,"top":"XXYYYYXXX","B":"XYX","R":"XXY","F":"YYX","L":"YXX","group":"Knight Move Shapes","name":"K4","prob":"1/54","alg":"(r U r') (R U R' U') (r U' r')"},
+  {"id":17,"top":"YXXXYXXXY","B":"XYY","R":"XYX","F":"XYX","L":"XYY","group":"No Edges Flipped Correctly","name":"O5","prob":"1/54","alg":"(R U R' U) (R' F R F') U2' (R' F R F')"},
+  {"id":18,"top":"YXYXYXXXX","B":"XYX","R":"XYX","F":"YYY","L":"XYX","group":"No Edges Flipped Correctly","name":"O6","prob":"1/54","alg":"y R U2' (R2' F R F') U2' M' (U R U' r')"},
+  {"id":19,"top":"YXYXYXXXX","B":"XYX","R":"XYY","F":"XYX","L":"XYY","group":"No Edges Flipped Correctly","name":"O7","prob":"1/54","alg":"M U (R U R' U') M' (R' F R F')"},
+  {"id":20,"top":"YXYXYXYXY","B":"XYX","R":"XYX","F":"XYX","L":"XYX","group":"No Edges Flipped Correctly","name":"O8","prob":"1/216","alg":"M U (R U R' U') M2' (U R U' r')"},
+  {"id":21,"top":"XYXYYYXYX","B":"YXY","R":"XXX","F":"YXY","L":"XXX","group":"All Edges Oriented Correctly","name":"OCLL1","prob":"1/108","alg":"(R U2 R') (U' R U R') (U' R U' R')"},
+  {"id":22,"top":"XYXYYYXYX","B":"XXY","R":"XXX","F":"XXY","L":"YXY","group":"All Edges Oriented Correctly","name":"OCLL2","prob":"1/54","alg":"R U2' R2' U' R2 U' R2' U2' R"},
+  {"id":23,"top":"YYYYYYXYX","B":"XXX","R":"XXX","F":"YXY","L":"XXX","group":"All Edges Oriented Correctly","name":"OCLL3","prob":"1/54","alg":"R2 D (R' U2 R) D' (R' U2 R')"},
+  {"id":24,"top":"XYYYYYXYY","B":"YXX","R":"XXX","F":"YXX","L":"XXX","group":"All Edges Oriented Correctly","name":"OCLL4","prob":"1/54","alg":"(r U R' U') (r' F R F')"},
+  {"id":25,"top":"YYXYYYXYY","B":"XXX","R":"YXX","F":"YXX","L":"XXX","group":"All Edges Oriented Correctly","name":"OCLL5","prob":"1/54","alg":"y F' (r U R' U') r' F R"},
+  {"id":26,"top":"XYYYYYXYX","B":"XXX","R":"XXY","F":"YXX","L":"YXX","group":"All Edges Oriented Correctly","name":"OCLL6","prob":"1/54","alg":"R U2 R' U' R U' R'"},
+  {"id":27,"top":"XYXYYYYYX","B":"YXX","R":"YXX","F":"XXY","L":"XXX","group":"All Edges Oriented Correctly","name":"OCLL7","prob":"1/54","alg":"R U R' U R U2' R'"},
+  {"id":28,"top":"YYYYYXYXY","B":"XXX","R":"XYX","F":"XYX","L":"XXX","group":"Corners Correct, Edges Flipped","name":"E1","prob":"1/54","alg":"(r U R' U') M (U R U' R')"},
+  {"id":29,"top":"XYYYYXXXY","B":"YXX","R":"XYX","F":"YYX","L":"XXX","group":"Awkward Shapes","name":"A1","prob":"1/54","alg":"y (R U R' U') (R U' R') (F' U' F) (R U R')"},
+  {"id":30,"top":"YYXXYYYXX","B":"XXY","R":"XXX","F":"XYY","L":"XYX","group":"Awkward Shapes","name":"A2","prob":"1/54","alg":"y' F U (R U2 R' U') (R U2 R' U') F'"},
+  {"id":31,"top":"XYYXYYXXY","B":"YXX","R":"XXX","F":"YYX","L":"XYX","group":"P-Shapes","name":"P1","prob":"1/54","alg":"(R' U' F) (U R U' R') F' R"},
+  {"id":32,"top":"XXYXYYXYY","B":"YYX","R":"XXX","F":"YXX","L":"XYX","group":"P-Shapes","name":"P2","prob":"1/54","alg":"R U B' (U' R' U) (R B R')"},
+  {"id":33,"top":"XXYYYYXXY","B":"YYX","R":"XXX","F":"YYX","L":"XXX","group":"T-Shapes","name":"T1","prob":"1/54","alg":"(R U R' U') (R' F R F')"},
+  {"id":34,"top":"XXXYYYYXY","B":"XYX","R":"YXX","F":"XYX","L":"YXX","group":"C-Shapes","name":"C1","prob":"1/54","alg":"(R U R2' U') (R' F R U) R U' F'"},
+  {"id":35,"top":"YXXXYYXYY","B":"XYX","R":"YXX","F":"YXX","L":"XYX","group":"Fish Shapes","name":"F3","prob":"1/54","alg":"(R U2') (R2' F R F') (R U2' R')"},
+  {"id":36,"top":"YXXYYXXYY","B":"XYX","R":"YYX","F":"YXX","L":"XXX","group":"W-Shapes","name":"W1","prob":"1/54","alg":"(R' U' R U') (R' U R U) l U' R' U x"},
+  {"id":37,"top":"YYXYYXXXY","B":"XXX","R":"YYX","F":"YYX","L":"XXX","group":"Fish Shapes","name":"F4","prob":"1/54","alg":"F (R U' R' U') (R U R' F')"},
+  {"id":38,"top":"XYYYYXYXX","B":"YXX","R":"XYY","F":"XYX","L":"XXX","group":"W-Shapes","name":"W2","prob":"1/54","alg":"(R U R' U) (R U' R' U') (R' F R F')"},
+  {"id":39,"top":"XXYYYYYXX","B":"YYX","R":"XXY","F":"XYX","L":"XXX","group":"Lightning Bolts","name":"B5","prob":"1/54","alg":"(L F') (L' U' L U) F U' L'"},
+  {"id":40,"top":"YXXYYYXXY","B":"XYY","R":"XXX","F":"XYX","L":"XXY","group":"Lightning Bolts","name":"B6","prob":"1/54","alg":"(R' F) (R U R' U') F' U R"},
+  {"id":41,"top":"XYXYYXYXY","B":"YXY","R":"XYX","F":"XYX","L":"XXX","group":"Awkward Shapes","name":"A3","prob":"1/54","alg":"(R U R' U R U2' R') F (R U R' U') F'"},
+  {"id":42,"top":"YXYYYXXYX","B":"XYX","R":"XYX","F":"YXY","L":"XXX","group":"Awkward Shapes","name":"A4","prob":"1/54","alg":"(R' U' R U' R' U2 R) F (R U R' U') F'"},
+  {"id":43,"top":"YXXYYXYYX","B":"XYX","R":"YYY","F":"XXX","L":"XXX","group":"P-Shapes","name":"P3","prob":"1/54","alg":"y R' U' F' U F R"},
+  {"id":44,"top":"XXYXYYXYY","B":"XYX","R":"XXX","F":"XXX","L":"YYY","group":"P-Shapes","name":"P4","prob":"1/54","alg":"f (R U R' U') f'"},
+  {"id":45,"top":"XXYYYYXXY","B":"XYX","R":"XXX","F":"XYX","L":"YXY","group":"T-Shapes","name":"T2","prob":"1/54","alg":"F (R U R' U') F'"},
+  {"id":46,"top":"YYXXYXYYX","B":"XXX","R":"YYY","F":"XXX","L":"XYX","group":"C-Shapes","name":"C2","prob":"1/54","alg":"R' U' (R' F R F') U R"},
+  {"id":47,"top":"XYXXYYXXX","B":"YXX","R":"YXY","F":"YYX","L":"XYX","group":"L-Shapes","name":"L1","prob":"1/54","alg":"F' (L' U' L U) (L' U' L U) F"},
+  {"id":48,"top":"XYXYYXXXX","B":"XXY","R":"XYX","F":"XYY","L":"YXY","group":"L-Shapes","name":"L2","prob":"1/54","alg":"F (R U R' U') (R U R' U') F'"},
+  {"id":49,"top":"XYXXYYXXX","B":"XXY","R":"XXX","F":"XYY","L":"YYY","group":"L-Shapes","name":"L3","prob":"1/54","alg":"r U' r2' U r2 U r2' U' r"},
+  {"id":50,"top":"XXXXYYXYX","B":"XYY","R":"XXX","F":"XXY","L":"YYY","group":"L-Shapes","name":"L4","prob":"1/54","alg":"r' U r2 U' r2' U' r2 U r'"},
+  {"id":51,"top":"XXXYYYXXX","B":"XYY","R":"XXX","F":"XYY","L":"YXY","group":"I-Shapes","name":"I1","prob":"1/54","alg":"f (R U R' U') (R U R' U') f'"},
+  {"id":52,"top":"XYXXYXXYX","B":"YXX","R":"YYY","F":"YXX","L":"XYX","group":"I-Shapes","name":"I2","prob":"1/54","alg":"(R' U' R U' R' U) y' (R' U R) B"},
+  {"id":53,"top":"XXXXYYXYX","B":"XYX","R":"YXY","F":"XXX","L":"YYY","group":"L-Shapes","name":"L5","prob":"1/54","alg":"(r' U' R U') (R' U R U') R' U2 r"},
+  {"id":54,"top":"XYXXYYXXX","B":"XXX","R":"YXY","F":"XYX","L":"YYY","group":"L-Shapes","name":"L6","prob":"1/54","alg":"(r U R' U) (R U' R' U) R U2' r'"},
+  {"id":55,"top":"XYXXYXXYX","B":"XXX","R":"YYY","F":"XXX","L":"YYY","group":"I-Shapes","name":"I3","prob":"1/108","alg":"y (R' F R U) (R U' R2' F') R2 U' R' (U R U R')"},
+  {"id":56,"top":"XXXYYYXXX","B":"XYX","R":"YXY","F":"XYX","L":"YXY","group":"I-Shapes","name":"I4","prob":"1/108","alg":"r' U' r (U' R' U R) (U' R' U R) r' U r"},
+  {"id":57,"top":"YXYYYYYXY","B":"XYX","R":"XXX","F":"XYX","L":"XXX","group":"Corners Correct, Edges Flipped","name":"E2","prob":"1/108","alg":"(R U R' U') M' (U R U' r')"}
+];
+
+var CL={Y:'#f5c518',X:'#252525'};
+var ST_COLOR={learned:'#3d9e6a',learning:'#c48c2a',unseen:'#444'};
+var ST_LABEL={learned:'Learned',learning:'Learning',unseen:'Not started'};
+var CYCLE={unseen:'learning',learning:'learned',learned:'unseen'};
+var LS_KEY='oll_v3';
+var GROUP_ORDER=[
+  "All Edges Oriented Correctly","T-Shapes","Squares","C-Shapes","W-Shapes",
+  "Corners Correct, Edges Flipped","P-Shapes","I-Shapes","Fish Shapes",
+  "Knight Move Shapes","Awkward Shapes","L-Shapes","Lightning Bolts",
+  "No Edges Flipped Correctly"
+];
+
+var cfg={};
+var state={};
+OLL_DATA.forEach(function(o){
+  state[o.id]={status:'unseen',excluded:false,rotation:null,alg:null};
+});
+var current=null;
+var showAlg=false;
+var editId=null;
+var editRot=0;
+var editStatus='unseen';
+
+function saveLS(){try{localStorage.setItem(LS_KEY,JSON.stringify({cfg:cfg,state:state}));}catch(e){}}
+function loadLS(){
+  try{
+    var s=localStorage.getItem(LS_KEY);
+    if(!s)return;
+    var d=JSON.parse(s);
+    if(d.cfg)cfg=d.cfg;
+    if(d.state)Object.keys(d.state).forEach(function(k){
+      var id=parseInt(k);
+      if(state[id])state[id]=d.state[k];
+    });
+  }catch(e){}
+}
+function exportData(){
+  var blob=new Blob([JSON.stringify({cfg:cfg,state:state},null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='oll_trainer_data.json';a.click();
+}
+function importData(evt){
+  var file=evt.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var d=JSON.parse(e.target.result);
+      if(d.cfg)cfg=d.cfg;
+      if(d.state)Object.keys(d.state).forEach(function(k){
+        var id=parseInt(k);if(state[id])state[id]=d.state[k];
+      });
+      saveLS();syncDisplayCfg();renderGrid();if(current)renderPractice();
+      alert('Imported!');
+    }catch(er){alert('Invalid file.');}
+  };
+  reader.readAsText(file);evt.target.value='';
+}
+
+function getPool(){return OLL_DATA.filter(function(o){return !state[o.id].excluded;});}
+function pickRandom(){var p=getPool();if(!p.length)return OLL_DATA[0];var candidates=p.length>1?p.filter(function(o){return !current||o.id!==current.id;}):p;return candidates[Math.floor(Math.random()*candidates.length)];}
+function getRotation(oll){return state[oll.id].rotation!==null?state[oll.id].rotation:0;}
+function getAlg(oll){return state[oll.id].alg!==null?state[oll.id].alg:oll.alg;}
+
+function applyRot(oll,rot){
+  var top=oll.top.split('');
+  var B=oll.B.split(''),R=oll.R.split(''),F=oll.F.split(''),L=oll.L.split('');
+  for(var i=0;i<rot/90;i++){
+    var nt=[top[6],top[3],top[0],top[7],top[4],top[1],top[8],top[5],top[2]];
+    var nB=[L[2],L[1],L[0]],nR=[B[0],B[1],B[2]],nF=[R[2],R[1],R[0]],nL=[F[0],F[1],F[2]];
+    top=nt;B=nB;R=nR;F=nF;L=nL;
+  }
+  return {top:top,B:B,R:R,F:F,L:L};
+}
+
+function buildSVG(oll,rot,cs){
+  var pat=applyRot(oll,rot);
+  var top=pat.top,B=pat.B,R=pat.R,F=pat.F,L=pat.L;
+  var gap=Math.max(2,Math.round(cs*0.07));
+  var off=Math.max(3,Math.round(cs*0.28));
+  var eh=Math.max(2,Math.round(cs*0.2));
+  var rx=Math.max(2,Math.round(cs*0.09));
+  var SK='#00000038';
+  var html='';
+  for(var rr=0;rr<3;rr++){
+    for(var cc=0;cc<3;cc++){
+      var idx=rr*3+cc;
+      var x=off+cc*(cs+gap),y=off+rr*(cs+gap);
+      html+='<rect x="'+x+'" y="'+y+'" width="'+cs+'" height="'+cs+'" rx="'+rx+'" fill="'+(top[idx]==='Y'?CL.Y:CL.X)+'" stroke="'+SK+'" stroke-width="1.5"/>';
+    }
+  }
+  var strips=[
+    {arr:B,cells:[{x:off,y:off-eh-gap,w:cs,h:eh},{x:off+cs+gap,y:off-eh-gap,w:cs,h:eh},{x:off+2*(cs+gap),y:off-eh-gap,w:cs,h:eh}]},
+    {arr:R,cells:[{x:off+3*(cs+gap),y:off,w:eh,h:cs},{x:off+3*(cs+gap),y:off+cs+gap,w:eh,h:cs},{x:off+3*(cs+gap),y:off+2*(cs+gap),w:eh,h:cs}]},
+    {arr:F,cells:[{x:off,y:off+3*(cs+gap),w:cs,h:eh},{x:off+cs+gap,y:off+3*(cs+gap),w:cs,h:eh},{x:off+2*(cs+gap),y:off+3*(cs+gap),w:cs,h:eh}]},
+    {arr:L,cells:[{x:off-eh-gap,y:off,w:eh,h:cs},{x:off-eh-gap,y:off+cs+gap,w:eh,h:cs},{x:off-eh-gap,y:off+2*(cs+gap),w:eh,h:cs}]}
+  ];
+  strips.forEach(function(strip){
+    strip.cells.forEach(function(cell,i){
+      html+='<rect x="'+cell.x+'" y="'+cell.y+'" width="'+cell.w+'" height="'+cell.h+'" rx="3" fill="'+(strip.arr[i]==='Y'?CL.Y:CL.X)+'" stroke="'+SK+'" stroke-width="1.5"/>';
+    });
+  });
+  return html;
+}
+
+function drawMain(oll){document.getElementById('cube-svg').innerHTML=buildSVG(oll,getRotation(oll),72);}
+function drawModal(oll,rot){document.getElementById('modal-svg').innerHTML=buildSVG(oll,rot,44);}
+
+function renderPractice(){
+  if(!current)return;
+  document.getElementById('p-name').textContent=current.name+' - '+current.id;
+  document.getElementById('p-prob').textContent='1/'+(current.prob.split('/')[1]);
+  document.getElementById('p-alg').textContent=getAlg(current)||'(no algorithm)';
+  var s=state[current.id].status;
+  var badge=document.getElementById('p-badge');
+  badge.textContent=ST_LABEL[s];badge.className='status-badge badge-'+s;
+  var ab=document.getElementById('alg-block');
+  if(showAlg){ab.classList.add('vis');}else{ab.classList.remove('vis');}
+  var lbl=showAlg?'Hide algorithm':'Show algorithm';
+  document.getElementById('alg-btn2').textContent=lbl;
+  drawMain(current);
+}
+function nextOLL(){current=pickRandom();showAlg=false;renderPractice();}
+function toggleAlg(){
+  showAlg=!showAlg;
+  var ab=document.getElementById('alg-block');
+  if(showAlg){ab.classList.add('vis');}else{ab.classList.remove('vis');}
+  document.getElementById('alg-btn2').textContent=showAlg?'Hide algorithm':'Show algorithm';
+}
+function markCurrent(s){
+  if(!current)return;
+  state[current.id].status=s;saveLS();
+  var badge=document.getElementById('p-badge');
+  badge.textContent=ST_LABEL[s];badge.className='status-badge badge-'+s;
+  var pool=getPool();
+  var stillIn=pool.some(function(o){return o.id===current.id;});
+  if(!stillIn&&pool.length>0){nextOLL();}
+}
+
+function syncDisplayCfg(){}
+function setCfg(k,v){cfg[k]=v;saveLS();}
+function openSettings(){
+  document.getElementById('vp').classList.remove('active');
+  document.getElementById('vs').classList.add('active');
+  renderGrid();syncDisplayCfg();
+}
+function closeSettings(){
+  document.getElementById('vs').classList.remove('active');
+  document.getElementById('vp').classList.add('active');
+  if(current)renderPractice();
+}
+
+function renderStatusStats(){
+  var total=OLL_DATA.length;
+  var poolN=getPool().length;
+  var counts={learned:0,learning:0,unseen:0};
+  OLL_DATA.forEach(function(o){counts[state[o.id].status]++;});
+  var el=document.getElementById('status-stats');
+  if(!el)return;
+  var st='font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;display:flex;align-items:center;gap:6px;';
+  var statusItems=[
+    {color:'#3d9e6a',label:'Learned',n:counts.learned},
+    {color:'#c48c2a',label:'Learning',n:counts.learning},
+    {color:'#555',label:'Not started',n:counts.unseen},
+  ];
+  var row1=statusItems.map(function(it){
+    return '<div style="'+st+'color:var(--text3);">'
+      +'<div style="width:8px;height:8px;border-radius:50%;background:'+it.color+';flex-shrink:0;"></div>'
+      +'<span style="color:var(--text2);">'+it.label+'</span>'
+      +' <span>'+it.n+'/'+total+'</span>'
+      +'</div>';
+  }).join('');
+  var btnSt='padding:5px 12px;border:1px solid var(--border2);background:transparent;border-radius:var(--radius);font-size:16px;font-weight:500;color:var(--text2);cursor:pointer;';
+  var row2='<div style="'+st+'color:var(--text3);flex-wrap:wrap;gap:8px;">'
+    +'<div style="width:8px;height:8px;border-radius:50%;border:2px solid var(--text3);flex-shrink:0;"></div>'
+    +'<span style="color:var(--text2);">Pool</span>'
+    +' <span>'+poolN+'/'+total+'</span>'
+    +'<button style="'+btnSt+'" onclick="poolByStatus(&quot;learning&quot;)">Learning</button>'
+    +'<button style="'+btnSt+'" onclick="poolByStatus(&quot;learned&quot;)">Learned</button>'
+    +'<button style="'+btnSt+'" onclick="includeAll()">All</button>'
+    +'<button style="'+btnSt+'" onclick="includeNone()">None</button>'
+    +'</div>';
+  el.innerHTML='<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;">'+row1+'</div>'+row2;
+}
+function renderGrid(){
+  renderStatusStats();
+  var grid=document.getElementById('pat-grid');
+  grid.innerHTML='';
+  GROUP_ORDER.forEach(function(grp){
+    var grpOlls=OLL_DATA.filter(function(o){return o.group===grp;});
+    if(!grpOlls.length)return;
+    var hdr=document.createElement('div');
+    hdr.style.cssText='grid-column:1/-1;font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:7px 0 3px;border-top:1px solid var(--border);margin-top:4px;cursor:pointer;user-select:none;';
+    
+    hdr.textContent=grp;
+    (function(gOlls){
+      hdr.addEventListener('contextmenu',function(e){
+        e.preventDefault();
+        var allIncluded=gOlls.every(function(o){return !state[o.id].excluded;});
+        gOlls.forEach(function(o){state[o.id].excluded=allIncluded?true:false;});
+        saveLS();renderGrid();
+      });
+    })(grpOlls);
+    grid.appendChild(hdr);
+    grpOlls.forEach(function(o){
+      var s=state[o.id].status;
+      var ex=state[o.id].excluded;
+      var cell=document.createElement('div');
+      cell.className='pat-cell '+s+(ex?' excluded':'');
+      var svgH=buildSVG(o,getRotation(o),14);
+      cell.innerHTML='<svg width="68" height="68" viewBox="0 0 57 57" style="overflow:visible;display:block;margin:0 auto 4px;">'+svgH+'</svg>'+
+        '<div style="font-size:12px;font-weight:600;color:var(--text3);margin-bottom:2px;">'+o.name+'</div>'+
+        '<div class="pdot" style="background:'+ST_COLOR[s]+';"></div>';
+      (function(oid){
+        cell.addEventListener('click',function(){openModal(oid);});
+        cell.addEventListener('contextmenu',function(e){e.preventDefault();state[oid].excluded=!state[oid].excluded;saveLS();renderGrid();});
+      })(o.id);
+      grid.appendChild(cell);
+    });
+  });
+}
+
+function setAllStatus(s){OLL_DATA.forEach(function(o){state[o.id].status=s;});saveLS();renderGrid();}
+function poolByStatus(s){OLL_DATA.forEach(function(o){state[o.id].excluded=state[o.id].status!==s;});saveLS();renderGrid();}
+function includeAll(){OLL_DATA.forEach(function(o){state[o.id].excluded=false;});saveLS();renderGrid();}
+function includeNone(){OLL_DATA.forEach(function(o){state[o.id].excluded=true;});saveLS();renderGrid();}
+
+function openModal(id){
+  editId=id;
+  var oll=null;for(var i=0;i<OLL_DATA.length;i++){if(OLL_DATA[i].id===id){oll=OLL_DATA[i];break;}}
+  editStatus=state[id].status;
+  editRot=state[id].rotation!==null?state[id].rotation:0;
+  document.getElementById('m-alg').value=getAlg(oll);
+  syncModal();drawModal(oll,editRot);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function syncModal(){
+  ['unseen','learning','learned'].forEach(function(s){
+    var el=document.getElementById('ms-'+s);
+    if(el){if(s===editStatus){el.classList.add('on');}else{el.classList.remove('on');}}
+  });
+  [0,90,180,270].forEach(function(r){
+    var el=document.getElementById('mr-'+r);
+    if(el){if(r===editRot){el.classList.add('on');}else{el.classList.remove('on');}}
+  });
+}
+function setMs(s){editStatus=s;syncModal();}
+function setMr(r){
+  editRot=r;syncModal();
+  var oll=null;for(var i=0;i<OLL_DATA.length;i++){if(OLL_DATA[i].id===editId){oll=OLL_DATA[i];break;}}
+  if(oll)drawModal(oll,editRot);
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');editId=null;}
+function saveModal(){
+  if(editId===null)return;
+  state[editId].status=editStatus;state[editId].rotation=editRot;
+  var algVal=document.getElementById('m-alg').value.trim();
+  state[editId].alg=algVal||null;
+  saveLS();closeModal();renderGrid();
+  if(current&&current.id===editId)renderPractice();
+}
+document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+loadLS();nextOLL();
+document.addEventListener('keydown',function(e){
+  if(e.key===' '&&document.getElementById('vp').classList.contains('active')){
+    e.preventDefault();nextOLL();
+  }
+});
+</script>
+</body>
+</html>
